@@ -1,0 +1,124 @@
+
+class IngameHowToPlay {
+
+    private const string LANG_SUFFIX_CH_HAN = "_ch_han";
+    private const string LANG_SUFFIX_CH_KAN = "_ch_kan";
+    private const string LANG_SUFFIX_EN = "_en";
+    private const string LANG_SUFFIX_JP = "_jp";
+
+	private string GetLangSuffix(AppRes.Language lang)
+	{
+		if (lang != AppRes.Language.English)
+		{
+			if (lang == AppRes.Language.Japanese)
+			{
+				return "_jp";
+			}
+			return "_en";
+		}
+		return "_en";
+	}
+}
+
+class IngameView {
+
+  public void StartUpView(IngamePresenter.IngemeParam param)
+{
+    this.m_isTutorial = param.isTutorial;
+    if (!this.m_isTutorial)
+    {
+        this.m_dbmStage = SingletonBase<DBModel>.Instance.dbmStageCache.Find(param.stage.stage_id).Value;
+    }
+    if (this.m_dbmStage.stage_type == 1)
+    {
+        this.m_isMugenMode = true;
+    }
+    else
+    {
+        this.m_isMugenMode = false;
+    }
+    this.m_dbtPlayer = SingletonBase<PlayerModel>.Instance.GetPlayer();
+    this.m_costume = SingletonBase<CharaCostumeModel>.Instance.GetSelectedCostume();
+    if (this.m_isTutorial)
+    {
+        DBMStage stage = new DBMStage {
+            stage_id = 0x2710,
+            stage_num = 0x3e8,
+            stage_type = 0,
+            sort_no = 0,
+            name_key = "",
+            difficulty = 0,
+            stage_lv = 0,
+            music_id = 0,
+            stg_asset_name = "stg_0000",
+            unlock_type = 0,
+            unlock_cond_lv = 0,
+            unlock_cond_stg = 0,
+            enemy_img_key = "enemy_img_001"
+        };
+        this.m_dbmStage = stage;
+        this.m_player.onInputPlayerMove = sender => this.OnInputPlayerMove();
+        this.m_player.onInputPlayerJump = sender => this.OnInputPlayerJump();
+        this.m_player.onInputChangeBitPos = sender => this.OnInputChangeBitPos();
+        string str = "_en";
+        if (SingletonBase<AppText>.Instance.language == AppRes.Language.Japanese)
+        {
+            str = "_jp";
+        }
+        else
+        {
+            str = "_en";
+        }
+        this.m_tutorialSlides = new List<Sprite>();
+        for (int i = 1; i <= 5; i++)
+        {
+            string str2 = "Images/Slide/tutorial_slide_half_" + i.ToString("D2") + str;
+            this.m_tutorialSlides.Add(Resources.Load<Sprite>(str2));
+        }
+        this.m_tutorialStep = TUTORIAL_STEP.TUTORIAL_INIT;
+    }
+    else
+    {
+        this.m_dbtStage = SingletonBase<DBModel>.Instance.dbtStageCache.Find(this.m_dbmStage.stage_id);
+        this.m_gameStep = GAME_STEP.GAME_STEP_INIT;
+    }
+    this.SetupEvent();
+    this.m_objIndex = 0;
+    if (this.playingArea != null)
+    {
+        for (int j = 0; j < this.playingArea.transform.get_childCount(); j++)
+        {
+            this.m_playingAreaBox.Add(this.playingArea.transform.GetChild(j).gameObject);
+        }
+    }
+    DOTween.SetTweensCapacity(800, 200);
+    this.SetDefaultColorPlayingAreaBoxs();
+    this.m_backgroundColorBase = this.m_backGround.color;
+    this.m_isFocusOut = false;
+    this.m_player.PlayerLinePanel = this.m_PlayerLinePanel;
+    this.m_player.SetJumpSuccessCallback(new Action(this.JumpSuccessCallback));
+    if (!this.m_isTutorial)
+    {
+        string stageName = AppText.GetStr(this.m_dbmStage.name_key);
+        string difficulty = AppText.GetStr("stgsel_difficulty_normal");
+        if (this.m_dbmStage.difficulty == 1)
+        {
+            difficulty = AppText.GetStr("stgsel_difficulty_hard");
+        }
+        if (this.m_isMugenMode)
+        {
+            difficulty = null;
+        }
+        this.m_stageNamePanel.DispStageName(stageName, difficulty);
+    }
+    base.StartCoroutine(this.LoadStage(delegate (bool result) {
+        if (result)
+        {
+            this.onShowIngameView(this);
+        }
+    }));
+}
+
+ 
+
+}
